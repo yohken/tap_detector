@@ -29,6 +29,7 @@ def detect_tap_onsets_and_peaks(
     hp_cutoff: float = 300.0,
     threshold_ratio: float = 0.1,      # envelope フィルタ (env >= threshold_ratio * env_max)
     amp_threshold_ratio: float = 0.03, # waveform フィルタ (abs(y) >= amp_threshold_ratio * max_abs)
+    peak_amp_ratio: float = 0.0,       # 最大振幅フィルタ (local_max >= peak_amp_ratio * global_max)
     min_distance_ms: float = 100.0,
     smooth_ms: float = 0.3,            # Hilbert envelope smoothing window [ms]
 ) -> List[Dict[str, float]]:
@@ -41,12 +42,14 @@ def detect_tap_onsets_and_peaks(
         hp_cutoff: HPF cutoff [Hz]
         threshold_ratio: envelope peak filter (ratio of global env_max)
         amp_threshold_ratio: waveform amplitude filter (ratio of max_abs)
+        peak_amp_ratio: peak amplitude filter - only detect taps whose local max
+                       amplitude is >= this ratio of global max amplitude
         min_distance_ms: minimum distance between peaks [ms]
         smooth_ms: smoothing window for Hilbert envelope [ms]
 
     Returns:
         List of dict with keys:
-            tap_start, tap_peak, hp_cutoff, threshold, amp_threshold, smooth_ms
+            tap_start, tap_peak, hp_cutoff, threshold, amp_threshold, peak_amp_ratio, smooth_ms
     """
     # HPF
     y_filt = butter_highpass_zero_phase(y, sr, hp_cutoff)
@@ -74,9 +77,21 @@ def detect_tap_onsets_and_peaks(
 
     results: List[Dict[str, float]] = []
 
+    # ピーク周辺を検索する窓幅（エンベロープ平滑化の半周期程度）
+    half_window = max(1, int(smooth_ms * 1e-3 * sr))
+
     for p in peak_idx:
-        # Waveform amplitude filter
-        if abs(y_filt[p]) < amp_threshold_ratio * max_amp:
+        # Waveform amplitude filter: ピーク周辺の最大振幅をチェック
+        start_idx = max(0, p - half_window)
+        end_idx = min(len(y_filt), p + half_window + 1)
+        local_max_amp = float(np.max(np.abs(y_filt[start_idx:end_idx])))
+
+        # 下限閾値: ノイズ除外
+        if local_max_amp < amp_threshold_ratio * max_amp:
+            continue
+
+        # 上限閾値: 大きなタップのみ検出（0の場合は無効）
+        if peak_amp_ratio > 0.0 and local_max_amp < peak_amp_ratio * max_amp:
             continue
 
         peak_val = env[p]
@@ -110,6 +125,7 @@ def detect_tap_onsets_and_peaks(
                 "hp_cutoff": float(hp_cutoff),
                 "threshold": float(threshold_ratio),
                 "amp_threshold": float(amp_threshold_ratio),
+                "peak_amp_ratio": float(peak_amp_ratio),
                 "smooth_ms": float(smooth_ms),
             }
         )
@@ -123,6 +139,7 @@ def detect_taps_from_wav(
     hp_cutoff: float = 300.0,
     threshold_ratio: float = 0.1,
     amp_threshold_ratio: float = 0.03,
+    peak_amp_ratio: float = 0.0,
     min_distance_ms: float = 100.0,
     smooth_ms: float = 0.3,
 ) -> List[Dict[str, float]]:
@@ -131,7 +148,7 @@ def detect_taps_from_wav(
 
     Returns:
         List of dict with keys:
-            file_name, tap_start, tap_peak, hp_cutoff, threshold, amp_threshold, smooth_ms
+            file_name, tap_start, tap_peak, hp_cutoff, threshold, amp_threshold, peak_amp_ratio, smooth_ms
     """
     y, sr = sf.read(wav_path)
     if y.ndim > 1:
@@ -143,6 +160,7 @@ def detect_taps_from_wav(
         hp_cutoff=hp_cutoff,
         threshold_ratio=threshold_ratio,
         amp_threshold_ratio=amp_threshold_ratio,
+        peak_amp_ratio=peak_amp_ratio,
         min_distance_ms=min_distance_ms,
         smooth_ms=smooth_ms,
     )

@@ -22,8 +22,10 @@ from .tap_plot import plot_tap_detection_interactive
 
 
 # デフォルトパラメータ（研究用途として固定）
-DEFAULT_HPF = 300.0           # Hz
+DEFAULT_HPF = 100.0           # Hz
 DEFAULT_THRESHOLD_RATIO = 0.1  # 10%
+DEFAULT_AMP_THRESHOLD_RATIO = 0.03  # 3%
+DEFAULT_PEAK_AMP_RATIO = 0.0  # 0% (無効)
 DEFAULT_MIN_DISTANCE_MS = 100.0  # ms
 
 
@@ -51,11 +53,14 @@ class TapDetectorGUI:
         title_label.grid(row=0, column=0, pady=20)
 
         # 説明
+        peak_amp_desc = f"{int(DEFAULT_PEAK_AMP_RATIO * 100)}%" if DEFAULT_PEAK_AMP_RATIO > 0 else "OFF"
         desc = (
             "Select one or more WAV files.\n"
             "For each file, tap onsets are detected using:\n"
             f"  - HPF = {DEFAULT_HPF:.0f} Hz (Butterworth + filtfilt, zero-phase)\n"
             f"  - Threshold = {int(DEFAULT_THRESHOLD_RATIO * 100)}% of envelope peak\n"
+            f"  - Amp Threshold = {int(DEFAULT_AMP_THRESHOLD_RATIO * 100)}% of max amplitude (lower limit)\n"
+            f"  - Peak Amp = {peak_amp_desc} of max amplitude (upper limit)\n"
             f"  - Min distance between peaks = {DEFAULT_MIN_DISTANCE_MS:.0f} ms\n\n"
             "Results are shown below and an interactive plot window opens.\n"
             "Zoom / pan / re-detect / export are controlled in the plot window."
@@ -201,6 +206,8 @@ class TapDetectorGUI:
                     path,
                     initial_hp_cutoff_hz=DEFAULT_HPF,
                     threshold_ratio=DEFAULT_THRESHOLD_RATIO,
+                    amp_threshold_ratio=DEFAULT_AMP_THRESHOLD_RATIO,
+                    peak_amp_ratio=DEFAULT_PEAK_AMP_RATIO,
                     min_distance_ms=DEFAULT_MIN_DISTANCE_MS,
                     title=(
                         f"Tap Onset Detection (Fujii) - {basename} "
