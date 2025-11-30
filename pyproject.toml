@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tap_detector"
+version = "1.0.0"
+description = "タップ音のオンセット検出ツールキット（Fujii 10% 法）"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "yohken"}
+]
+keywords = ["audio", "onset detection", "tap", "signal processing", "DSP"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "soundfile>=0.10.0",
+    "matplotlib>=3.4.0",
+]
+
+[project.scripts]
+tap-detector = "tap_detector.tap_gui:main"
+
+[project.urls]
+"Homepage" = "https://github.com/yohken/tap_detector"
+"Repository" = "https://github.com/yohken/tap_detector"
+
+[tool.setuptools]
+packages = ["tap_detector"]
+
+[tool.setuptools.package-dir]
+tap_detector = "."
